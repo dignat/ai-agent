@@ -360,7 +360,9 @@ components:
         analyzer.analyze('valid requirements'), // Should succeed
         analyzer.analyze('invalid requirements'), // Should fail but recover
         validationEngine.validate({
-          components: [{ id: '1', name: 'Test', type: 'compute', description: 'Test', isAWSService: true }],
+          components: [
+            { id: '1', name: 'Test', type: 'compute', description: 'Test', isAWSService: true },
+          ],
           relationships: [],
           patterns: [],
           requirements: [],
