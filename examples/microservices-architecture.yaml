@@ -1,0 +1,159 @@
+---
+name: Microservices E-Commerce Platform
+description: Container-based microservices architecture with ECS and Kubernetes
+type: microservices
+components:
+  - id: ecs-cluster
+    name: Amazon ECS
+    type: compute
+    isAWSService: true
+    description: Container orchestration service for microservices
+    configuration:
+      launchType: FARGATE
+      taskCPU: 1024
+      taskMemory: 2048
+      desiredCount: 2
+
+  - id: alb
+    name: Application Load Balancer
+    type: networking
+    isAWSService: true
+    description: Distributes traffic across ECS services
+    configuration:
+      scheme: internet-facing
+      listeners:
+        - protocol: HTTP
+          port: 80
+        - protocol: HTTPS
+          port: 443
+
+  - id: rds-postgres
+    name: Amazon RDS PostgreSQL
+    type: database
+    isAWSService: true
+    description: Relational database for transactional data
+    configuration:
+      engine: postgres
+      engineVersion: 13.4
+      instanceClass: db.t3.medium
+      allocatedStorage: 100
+      multiAZ: true
+
+  - id: elasticache-redis
+    name: Amazon ElastiCache Redis
+    type: database
+    isAWSService: true
+    description: In-memory caching for performance optimization
+    configuration:
+      engine: redis
+      cacheNodeType: cache.t3.small
+      numCacheNodes: 2
+      engineVersion: 6.x
+
+  - id: ecr
+    name: Amazon ECR
+    type: storage
+    isAWSService: true
+    description: Container image repository
+    configuration:
+      scanOnPush: true
+      encryption: AES-256
+
+  - id: cloudwatch
+    name: Amazon CloudWatch
+    type: monitoring
+    isAWSService: true
+    description: Monitoring and logging service
+    configuration:
+      retentionDays: 30
+      alarmsEnabled: true
+
+relationships:
+  - source: Application Load Balancer
+    target: Amazon ECS
+    type: routes
+    description: ALB distributes HTTP/HTTPS traffic to ECS services
+
+  - source: Amazon ECS
+    target: Amazon RDS PostgreSQL
+    type: reads/writes
+    description: ECS services perform database operations
+
+  - source: Amazon ECS
+    target: Amazon ElastiCache Redis
+    type: reads/writes
+    description: ECS services use Redis for caching
+
+  - source: Amazon ECS
+    target: Amazon ECR
+    type: pulls
+    description: ECS pulls container images from ECR
+
+  - source: Amazon ECS
+    target: Amazon CloudWatch
+    type: sends
+    description: ECS sends logs and metrics to CloudWatch
+
+patterns:
+  - name: Microservices Architecture
+    category: Application
+    services: [ECS, ALB, RDS, ElastiCache]
+    description: Modular service design with independent deployment and scaling
+
+  - name: Container Orchestration
+    category: Compute
+    services: [ECS, ECR]
+    description: Managed container orchestration with image repository
+
+  - name: Caching Pattern
+    category: Performance
+    services: [ElastiCache]
+    description: In-memory caching for database offloading
+
+requirements:
+  - Handle 50,000 concurrent users during peak
+  - 99.99% availability for critical services
+  - Sub-100ms response times for cached requests
+  - PCI DSS compliance for payment processing
+  - HIPAA compliance for health data
+  - Blue/green deployment capability
+  - Canary deployment support
+
+constraints:
+  - ECS task maximum memory: 4GB
+  - RDS maximum connections: 200
+  - ElastiCache maximum memory: 8GB per node
+  - ALB maximum request size: 1MB
+  - ECR image size limit: 10GB
+
+bestPractices:
+  - Use ECS task definitions with proper resource limits
+  - Implement proper health checks and auto-recovery
+  - Use RDS read replicas for read-heavy workloads
+  - Implement proper ElastiCache eviction policies
+  - Use ECR image scanning for vulnerabilities
+  - Implement proper CloudWatch alarms and dashboards
+  - Use IAM roles with least privilege for ECS tasks
+  - Implement proper network security with security groups
+  - Use VPC endpoints for AWS service communication
+  - Implement proper logging and tracing
+
+useCases:
+  - Product catalog management
+  - User authentication and authorization
+  - Shopping cart and checkout
+  - Order processing and fulfillment
+  - Inventory management
+  - Payment processing
+  - User profile management
+  - Recommendation engine
+
+metadata:
+  createdBy: AWS Architecture Agent
+  createdDate: 2023-11-15
+  environment: production
+  region: us-west-2
+  compliance: [PCI-DSS, HIPAA]
+  costEstimate: $2000-$5000/month
+  scalability: Very High
+  teamSize: 5-10 developers

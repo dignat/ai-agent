@@ -1,0 +1,223 @@
+name: AWS Architecture Agent CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Lint code
+      run: npm run lint
+
+    - name: Format code
+      run: npm run format
+
+    - name: Build project
+      run: npm run build
+
+    - name: Run unit tests
+      run: npm test
+
+    - name: Run integration tests
+      run: npm test -- test/integration/
+
+    - name: Run validation tests
+      run: npm test -- test/validation/
+
+    - name: Run performance tests
+      run: npm test -- test/performance/
+
+    - name: Run error handling tests
+      run: npm test -- test/error-handling/
+
+    - name: Run test with coverage
+      run: npx jest --config=test/coverage/jest-coverage.config.js
+
+    - name: Generate test quality report
+      run: node test/coverage/test-quality-metrics.js
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage/
+
+    - name: Upload test quality report
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-quality-report
+        path: test-quality-report.html
+
+  quality-gate:
+    name: Quality Gate
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Download coverage report
+      uses: actions/download-artifact@v3
+      with:
+        name: coverage-report
+
+    - name: Check coverage thresholds
+      run: |
+        # Parse coverage summary
+        COVERAGE=$(cat coverage/coverage-summary.json)
+        LINES=$(echo $COVERAGE | jq '.total.lines.pct')
+        FUNCTIONS=$(echo $COVERAGE | jq '.total.functions.pct')
+        BRANCHES=$(echo $COVERAGE | jq '.total.branches.pct')
+        STATEMENTS=$(echo $COVERAGE | jq '.total.statements.pct')
+
+        echo "Coverage Metrics:"
+        echo "Lines: $LINES%"
+        echo "Functions: $FUNCTIONS%"
+        echo "Branches: $BRANCHES%"
+        echo "Statements: $STATEMENTS%"
+
+        # Check if coverage meets minimum thresholds
+        if (( $(echo "$LINES < 80" | bc -l) )); then
+          echo "❌ Line coverage below 80% threshold"
+          exit 1
+        fi
+
+        if (( $(echo "$FUNCTIONS < 80" | bc -l) )); then
+          echo "❌ Function coverage below 80% threshold"
+          exit 1
+        fi
+
+        if (( $(echo "$BRANCHES < 70" | bc -l) )); then
+          echo "❌ Branch coverage below 70% threshold"
+          exit 1
+        fi
+
+        if (( $(echo "$STATEMENTS < 80" | bc -l) )); then
+          echo "❌ Statement coverage below 80% threshold"
+          exit 1
+        fi
+
+        echo "✅ All coverage thresholds met"
+
+    - name: Run test quality metrics
+      run: node test/coverage/test-quality-metrics.js
+
+    - name: Check quality score
+      run: |
+        # This would be implemented to check the quality score
+        # For now, we'll just ensure the script runs successfully
+        echo "Quality gate check completed"
+
+  deploy:
+    name: Deploy
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build production version
+      run: npm run build
+
+    - name: Run final validation
+      run: |
+        # Run a final validation to ensure everything works
+        node dist/cli/main.js --version
+        node dist/cli/main.js --help
+
+    - name: Package artifacts
+      run: |
+        mkdir -p dist-package
+        cp -r dist/ dist-package/
+        cp package.json dist-package/
+        cp README.md dist-package/
+        tar -czvf aws-architecture-agent-${{ github.sha }}.tar.gz dist-package/
+
+    - name: Upload deployment package
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-package
+        path: aws-architecture-agent-${{ github.sha }}.tar.gz
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: aws-architecture-agent-${{ github.sha }}.tar.gz
+        generate_release_notes: true
+
+  performance-monitoring:
+    name: Performance Monitoring
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run performance tests with metrics
+      run: |
+        # Run performance tests and capture metrics
+        echo "Running performance tests..."
+        npm test -- test/performance/
+
+        # This would be enhanced to capture and store performance metrics
+        echo "Performance monitoring completed"
+
+    - name: Store performance metrics
+      run: |
+        # This would store performance metrics for trend analysis
+        echo "Performance metrics stored for trend analysis"

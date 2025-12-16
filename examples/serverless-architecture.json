@@ -1,0 +1,182 @@
+{
+  "name": "Serverless E-Commerce Platform",
+  "description": "A highly scalable serverless e-commerce architecture using AWS services",
+  "type": "serverless",
+  "components": [
+    {
+      "id": "api-gateway",
+      "name": "Amazon API Gateway",
+      "type": "networking",
+      "isAWSService": true,
+      "description": "RESTful API endpoint management with caching and throttling",
+      "configuration": {
+        "cacheEnabled": true,
+        "throttling": {
+          "rate": 1000,
+          "burst": 2000
+        }
+      }
+    },
+    {
+      "id": "lambda-functions",
+      "name": "AWS Lambda",
+      "type": "compute",
+      "isAWSService": true,
+      "description": "Serverless compute for business logic processing",
+      "configuration": {
+        "runtime": "nodejs18.x",
+        "memorySize": 1024,
+        "timeout": 15
+      }
+    },
+    {
+      "id": "dynamodb",
+      "name": "Amazon DynamoDB",
+      "type": "database",
+      "isAWSService": true,
+      "description": "NoSQL database for product catalog and user data",
+      "configuration": {
+        "readCapacity": 10,
+        "writeCapacity": 10,
+        "autoScaling": true
+      }
+    },
+    {
+      "id": "s3-storage",
+      "name": "Amazon S3",
+      "type": "storage",
+      "isAWSService": true,
+      "description": "Object storage for product images and static assets",
+      "configuration": {
+        "storageClass": "STANDARD",
+        "versioning": true,
+        "encryption": "AES-256"
+      }
+    },
+    {
+      "id": "cognito",
+      "name": "Amazon Cognito",
+      "type": "security",
+      "isAWSService": true,
+      "description": "User authentication and authorization",
+      "configuration": {
+        "userPools": true,
+        "socialProviders": ["Google", "Facebook"]
+      }
+    },
+    {
+      "id": "cloudfront",
+      "name": "Amazon CloudFront",
+      "type": "networking",
+      "isAWSService": true,
+      "description": "Content delivery network for global distribution",
+      "configuration": {
+        "enabled": true,
+        "defaultTTL": 3600
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "source": "Amazon API Gateway",
+      "target": "AWS Lambda",
+      "type": "triggers",
+      "description": "API Gateway routes HTTP requests to Lambda functions"
+    },
+    {
+      "source": "AWS Lambda",
+      "target": "Amazon DynamoDB",
+      "type": "reads/writes",
+      "description": "Lambda functions perform CRUD operations on DynamoDB"
+    },
+    {
+      "source": "AWS Lambda",
+      "target": "Amazon S3",
+      "type": "reads/writes",
+      "description": "Lambda functions upload/download files to/from S3"
+    },
+    {
+      "source": "Amazon API Gateway",
+      "target": "Amazon Cognito",
+      "type": "authenticates",
+      "description": "API Gateway uses Cognito for user authentication"
+    },
+    {
+      "source": "Amazon CloudFront",
+      "target": "Amazon S3",
+      "type": "caches",
+      "description": "CloudFront caches static content from S3"
+    },
+    {
+      "source": "Amazon CloudFront",
+      "target": "Amazon API Gateway",
+      "type": "routes",
+      "description": "CloudFront routes dynamic requests to API Gateway"
+    }
+  ],
+  "patterns": [
+    {
+      "name": "Serverless Architecture",
+      "category": "Compute",
+      "services": ["API Gateway", "Lambda", "DynamoDB"],
+      "description": "Fully managed compute with automatic scaling"
+    },
+    {
+      "name": "Event-Driven Architecture",
+      "category": "Integration",
+      "services": ["API Gateway", "Lambda"],
+      "description": "Request-response pattern with event triggers"
+    },
+    {
+      "name": "Microservices Pattern",
+      "category": "Application",
+      "description": "Modular service design with independent scaling"
+    }
+  ],
+  "requirements": [
+    "Handle 10,000 concurrent users",
+    "99.95% availability",
+    "Sub-second response times for API calls",
+    "PCI DSS compliance for payment processing",
+    "GDPR compliance for user data",
+    "Automatic scaling based on demand",
+    "Cost-effective operation"
+  ],
+  "constraints": [
+    "Lambda execution timeout: 15 seconds maximum",
+    "DynamoDB item size: 400KB maximum",
+    "S3 object size: 5TB maximum",
+    "API Gateway request size: 10MB maximum",
+    "Cognito user pool limit: 50 million users"
+  ],
+  "bestPractices": [
+    "Use Lambda layers for shared dependencies",
+    "Enable DynamoDB auto-scaling with proper alarms",
+    "Implement proper IAM roles with least privilege",
+    "Use API Gateway caching for frequent GET requests",
+    "Enable S3 versioning and lifecycle policies",
+    "Implement proper error handling and retries",
+    "Use CloudFront with proper cache invalidation strategies",
+    "Monitor all services with CloudWatch alarms",
+    "Implement proper logging and tracing",
+    "Use AWS X-Ray for distributed tracing"
+  ],
+  "useCases": [
+    "Product catalog browsing",
+    "User authentication and session management",
+    "Shopping cart management",
+    "Order processing and payment",
+    "Product search and filtering",
+    "User profile management",
+    "Order history and tracking"
+  ],
+  "metadata": {
+    "createdBy": "AWS Architecture Agent",
+    "createdDate": "2023-11-15",
+    "environment": "production",
+    "region": "us-east-1",
+    "compliance": ["PCI-DSS", "GDPR"],
+    "costEstimate": "$500-$1000/month",
+    "scalability": "High"
+  }
+}

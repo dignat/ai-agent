@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": ".",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@types/*": ["types/*"],
+      "@utils/*": ["utils/*"],
+      "@diagrams/*": ["utils/*"],
+      "@validation/*": ["validation/*"],
+      "@docs/*": ["docs/*"]
+    }
+  },
+  "include": ["src/**/*", "types/**/*", "utils/**/*", "diagrams/**/*", "validation/**/*", "docs/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
